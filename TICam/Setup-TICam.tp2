@@ -1,0 +1,1185 @@
+//Beginning Info:
+BACKUP ~TICam/Backup~
+AUTHOR ~Tibicina~
+VERSION ~1.0~
+README ~TICam/TICamryn_Readme.txt~
+
+//Crossplatform var stuff
+ALWAYS
+ACTION_IF GAME_IS ~bgee~ THEN BEGIN
+  /*The player is using version BG:EE*/
+  PRINT ~BGEE install detected~
+  INCLUDE ~TICam/lib/liam_bgee_vars.tpa~
+END ELSE BEGIN
+ACTION_IF GAME_IS ~tutu tutu_totsc~ THEN BEGIN
+    /*The player is using version Tutu*/
+    PRINT ~Tutu install detected.~
+    INCLUDE ~TICam/lib/g3_tutu_cpmvars.tpa~
+END ELSE BEGIN
+ACTION_IF GAME_IS ~bgt~ THEN BEGIN
+        /*The player is using version BGT*/
+        PRINT ~BGT install detected.~
+        INCLUDE ~TICam/lib/g3_bgt_cpmvars.tpa~
+        /*The player is not using an acceptable version*/
+END ELSE BEGIN FAIL ~Please install on BGEE, Tutu or BGT.~
+END
+
+DEFINE_ACTION_FUNCTION extend_area_script
+STR_VAR area=""
+top=""
+bottom=""
+BEGIN
+
+// find the area script from the area file
+COPY_EXISTING "%area%.are" override
+READ_ASCII 0x94 script
+BUT_ONLY
+
+// if it doesn't exist, give it a default name
+ACTION_IF "%script%" STRING_EQUAL "" BEGIN
+OUTER_INNER_PATCH_SAVE script "%area%" BEGIN
+REPLACE_TEXTUALLY "FW" "_AR" // TUTU naming conventions
+END
+END
+
+// extend the script
+ACTION_IF "%top%" STRING_COMPARE "" BEGIN
+EXTEND_TOP "%script%.bcs" "%top%" EVALUATE_BUFFER
+END
+ACTION_IF "%bottom%" STRING_COMPARE "" BEGIN
+EXTEND_BOTTOM "%script%.bcs" "%bottom%" EVALUATE_BUFFER
+END
+END
+
+ /* Face orientation for CreateCreature([xxx.yyy]%FACE_x%) */
+    OUTER_SPRINT ~FACE_0~ ~,0~
+    OUTER_SPRINT ~FACE_1~ ~,1~
+    OUTER_SPRINT ~FACE_2~ ~,2~
+    OUTER_SPRINT ~FACE_3~ ~,3~
+    OUTER_SPRINT ~FACE_4~ ~,4~
+    OUTER_SPRINT ~FACE_5~ ~,5~
+    OUTER_SPRINT ~FACE_6~ ~,6~
+    OUTER_SPRINT ~FACE_7~ ~,7~
+    OUTER_SPRINT ~FACE_8~ ~,8~
+    OUTER_SPRINT ~FACE_9~ ~,9~
+    OUTER_SPRINT ~FACE_10~ ~,10~
+    OUTER_SPRINT ~FACE_11~ ~,11~
+    OUTER_SPRINT ~FACE_12~ ~,12~
+    OUTER_SPRINT ~FACE_13~ ~,13~
+    OUTER_SPRINT ~FACE_14~ ~,14~
+    OUTER_SPRINT ~FACE_15~ ~,15~
+    OUTER_SPRINT ~FACE_16~ ~,16~
+
+// Fixing Imoen's dialogue file
+  /* Tutu: Giving Imoen a banter file entry in the interdi.2da */
+  ACTION_IF FILE_EXISTS_IN_GAME ~FW0100.are~ THEN BEGIN
+    APPEND ~interdia.2da~ ~IMOEN                    _BIMOEN~ UNLESS ~_\(BIMOEN\|bimoen\)~
+  END
+  /* BGT: Giving Imoen a banter file if the Fixpack isn't installed */
+  ACTION_IF NOT (FILE_EXISTS_IN_GAME ~cdbehbla.pro~) AND (FILE_EXISTS_IN_GAME ~AR7200.are~) THEN BEGIN
+    ACTION_IF FILE_EXISTS_IN_GAME ~saradush.mve~ THEN BEGIN
+      COPY_EXISTING ~interdia.2da~ ~override~
+        SET_2DA_ENTRY 17 1 2 ~BIMOEN2~ // fixes ToB version
+      BUT_ONLY_IF_IT_CHANGES
+    END ELSE BEGIN
+        APPEND ~interdia.2da~ ~IMOEN       BIMOEN2~ // fixes SoA version
+        UNLESS ~BIMOEN2~
+    END
+  END
+
+  /* Imoen BIMOEN.DLG rebuild */
+  ACTION_IF NOT (FILE_EXISTS_IN_GAME ~_bimoen.dlg~) AND (FILE_EXISTS_IN_GAME ~FW0100.are~) THEN BEGIN
+    COMPILE ~TICam/dialogues/x#bimoen_tutu.d~
+  END ELSE BEGIN
+    ACTION_IF NOT (FILE_EXISTS_IN_GAME ~bimoen2.dlg~) AND (FILE_EXISTS_IN_GAME ~AR7200.are~) THEN BEGIN
+      COMPILE ~TICam/dialogues/x#bimoen_bgt.d~
+    END
+  END
+
+  /* ACTION.IDS and TRIGGER.IDS patching to ToB - thanks, Cam, if you read it */
+  /* and GTIMES.IDS, ANIMATE.IDS patching to ToB, courtesy of the BG2 Fix Pack */
+  INCLUDE ~TICam/lib/ids_entries_cleanup.tph~
+
+/* Tutu Area Script Assignment Patching: All Areas Script ID'd */
+ACTION_IF FILE_EXISTS_IN_GAME ~FW0100.are~ THEN BEGIN
+  INCLUDE ~TICam/lib/tutu_area_script_assign.tph~
+END
+
+/* Area Type Flagging */
+/* ToSC only: Tutu and BGT */
+ACTION_IF (FILE_EXISTS_IN_GAME ~FW1500.are~) OR (FILE_EXISTS_IN_GAME ~ARW500.are~) THEN BEGIN // if TotSC is installed
+  COPY_EXISTING ~%IsleofBalduranN%.are~ ~override~
+                ~%IsleofBalduranS%.are~ ~override~
+                ~%DurlagsTower%.are~ ~override~
+                ~%Farmlands%.are~ ~override~
+    READ_BYTE  "0x48" "flags"
+    WRITE_BYTE "0x48" ("%flags%" BOR "0b00010001")
+  BUT_ONLY_IF_IT_CHANGES
+END
+
+  /* FOREST and OUTDOOR: Tutu and BGT */
+ACTION_IF (FILE_EXISTS_IN_GAME ~FW0100.are~) OR (FILE_EXISTS_IN_GAME ~AR7200.are~) THEN BEGIN
+  COPY_EXISTING ~%FishingVillage%.are~ ~override~
+                ~%Peldvale%.are~ ~override~
+                ~%LionsWay%.are~ ~override~
+                ~%CoastWay%.are~ ~override~
+                ~%Larswood%.are~ ~override~
+                ~%ShipwrecksCoast%.are~ ~override~
+                ~%HighHedge%.are~ ~override~
+                ~%MutaminsGarden%.are~ ~override~
+                ~%Lighthouse%.are~ ~override~
+                ~%RedCanyons%.are~ ~override~
+                ~%SouthBeregostRoad%.are~ ~override~
+                ~%Ulcaster%.are~ ~override~
+                ~%ArchaeologicalSite%.are~ ~override~
+                ~%FishermansLake%.are~ ~override~
+                ~%NorthNashkelRoad%.are~ ~override~
+                ~%LonelyPeaks%.are~ ~override~
+                ~%FirewineBridge%.are~ ~override~
+                ~%BearRiver%.are~ ~override~
+                ~%ValleyoftheTombs%.are~ ~override~
+                ~%DryadFalls%.are~ ~override~
+                ~%FireLeafForest%.are~ ~override~
+                ~%GibberlingMountains%.are~ ~override~
+    READ_BYTE  "0x48" "flags"
+    WRITE_BYTE "0x48" ("%flags%" BOR "0b00010001")
+    BUT_ONLY_IF_IT_CHANGES
+
+/* OUTDOOR ONLY: Tutu and BGT */
+COPY_EXISTING ~%GnollStronghold%.are~ ~override~
+              ~%NashkelMines%.are~ ~override~
+              ~%FriendlyArmInn%.are~ ~override~
+              ~%Temple%.are~ ~override~
+              ~%NashkelCarnival%.are~ ~override~
+  READ_BYTE  "0x48" "flags"
+  WRITE_BYTE "0x48" ("%flags%" BOR "0b00000001")
+  BUT_ONLY_IF_IT_CHANGES
+
+/* CITY and OUTDOOR */
+COPY_EXISTING ~%WyrmsCrossing%.are~ ~override~
+              ~%Candlekeep_Ch6%.are~ ~override~
+              ~%Gullykin%.are~ ~override~
+  READ_BYTE  "0x48" "flags"
+  WRITE_BYTE "0x48" ("%flags%" BOR "0b00001001")
+  BUT_ONLY_IF_IT_CHANGES
+END
+END
+END
+END
+//Component: Add Camryn
+BEGIN ~TICam NPC~
+
+// Adds custom IsValidForPartyDialogue state
+APPEND ~STATE.IDS~ // adds custom IsValidForPartyDialogue state
+  ~0x80101FEF CD_STATE_NOTVALID~
+  UNLESS ~CD_STATE_NOTVALID~
+
+//Adding music
+COPY_EXISTING ~songlist.2da~ ~override~
+SET_2DA_ENTRY 2 1 2 ~Blank~
+SET_2DA_ENTRY 2 2 2 ~Blank.mus~
+
+//Copying audio files
+COPY ~TICam/Audio~ ~override~
+
+//TICam and TITamah
+
+COPY_EXISTING ~TICam/creatures/TICam.cre~ ~override~  //probably will turn into bg1re/.. later
+  SAY INITIAL_MEETING ~I'm listening.~ [taldarkg]
+  SAY SELECT_COMMON1 ~I'm listening.~ [taldarkg]
+  SAY NAME1 ~Camryn~
+  SAY NAME2 ~Camryn~
+  WRITE_ASCII 0x248 ~TICam~ #8  //override script
+  WRITE_ASCII 0x280 ~TICam~ #32  //DV
+  WRITE_ASCII 0x2cc ~TICam~ #8   //pre-joining dialogue file
+  WRITE_ASCII 0X34 ~GenMELFS~ #8   //small portrait
+//  WRITE_EVALUATED_ASCII 0x250 ~%tutu_var%TICAM~ #8   // Class script
+//  WRITE_EVALUATED_ASCII 0x258 ~%tutu_scripts%EEENEMY~ #8   // Race script
+//  WRITE_EVALUATED_ASCII 0x268 ~%tutu_scriptw%TASIGHT~ #8   // Default script
+
+COPY_EXISTING ~TICam/creatures/TITamah.cre~ ~override~  //probably will turn into bg1re/.. later
+  SAY INITIAL_MEETING ~Yes?~ [TIShf]
+  SAY SELECT_COMMON1 ~Yes?~ [TIShf]
+  SAY NAME1 ~Tamah~
+  SAY NAME2 ~Tamah~
+  WRITE_ASCII 0x248 ~TITamah~ #8  //override script
+  WRITE_ASCII 0x280 ~TITamah~ #32  //DV
+  WRITE_ASCII 0x2cc ~TITamah~ #8   //pre-joining dialogue file
+  WRITE_ASCII 0X34 ~TITamahS~ #8   //small portrait
+  WRITE_EVALUATED_ASCII 0x250 ~%tutu_var%SHOUT~ #8   // Class script
+  WRITE_EVALUATED_ASCII 0x258 ~%tutu_scripts%EEENEMY~ #8   // Race script
+  WRITE_EVALUATED_ASCII 0x268 ~%tutu_scriptw%TASIGHT~ #8   // Default script
+
+COPY_EXISTING ~TICam/creatures/Tamah.cre~ ~override~  //probably will turn into bg1re/.. later
+  SAY INITIAL_MEETING ~What do you want?~ [TITamf]
+  SAY SELECT_COMMON1 ~What do you want?~ [TITamf]
+  SAY NAME1 ~Tamah~
+  SAY NAME2 ~Tamah~
+  BUT_ONLY_IF_IT_CHANGES
+//Compiling files
+
+COMPILE EVALUATE_BUFFER ~TICam/dialogues/TICam.d~
+COMPILE EVALUATE_BUFFER ~TICam/dialogues/TITamah.d~
+//COMPILE EVALUATE_BUFFER ~TICam/scripts/TICam.baf~
+COMPILE EVALUATE_BUFFER ~TICam/scripts/TICamCS1.baf~
+COMPILE EVALUATE_BUFFER ~TICam/scripts/TICamCS2.baf~
+
+//Component: This is adding our area files to the game
+
+LAF extend_area_script STR_VAR area="%Candlekeep_PriestsQuarters%" top="TICam/scripts/AR2602.baf" END
+LAF extend_area_script STR_VAR area="%Candlekeep%" top="TICam/scripts/AR2600.baf" END
+LAF extend_area_script STR_VAR area="%Beregost_FeldepostsInn_L1%" top="TICam/scripts/AR6752.baf" END
+LAF extend_area_script STR_VAR area="%Candlekeep_Library_L5%" top="TICam/scripts/AR2612.baf" END
+LAF extend_area_script STR_VAR area="%FriendlyArmInn_House%" top="TICam/scripts/AR2305.baf" END
+LAF extend_area_script STR_VAR area="%FriendlyArmInn_L3%" top="TICam/scripts/AR2303.baf" END
+LAF extend_area_script STR_VAR area="%Beregost_LandrinsHouse%" top="TICam/scripts/AR3315.baf" END
+LAF extend_area_script STR_VAR area="%Beregost_FirebeadsHouse_L2%" top="TICam/scripts/AR3334.baf" END
+LAF extend_area_script STR_VAR area="%Beregost_FeldepostsInn_L2%" top="TICam/scripts/AR3352.baf" END
+LAF extend_area_script STR_VAR area="%NashkelCarnival_ZordralsTent%" top="TICam/scripts/AR4906.baf" END
+LAF extend_area_script STR_VAR area="%Gullykin_JenkalsHouse_L1%" top="TICam/scripts/AR4001.baf" END
+LAF extend_area_script STR_VAR area="%Beregost_TravenhurstManor_L1%" top="TICam/scripts/AR3320.baf" END
+LAF extend_area_script STR_VAR area="%Nashkel_ManorHouse_L1%" top="TICam/scripts/AR4804.baf" END
+LAF extend_area_script STR_VAR area="%CloakwoodMines_L4%" top="TICam/scripts/AR1803.baf" END
+LAF extend_area_script STR_VAR area="%CloakwoodLodgeHuntingLodge%" top="TICam/scripts/AR2215.baf" END
+LAF extend_area_script STR_VAR area="%NBaldursGate_RamazithsTower_L6%" top="TICam/scripts/AR0138.baf" END
+LAF extend_area_script STR_VAR area="%WBaldursGate_RagefastsHouse%" top="TICam/scripts/AR0126.baf" END
+
+//Component: Adding items to containers in the game
+
+// 1. House #2 (Friendly Arm Inn)
+COPY_EXISTING ~%FriendlyArmInn_House%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME01
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 2. Friendly Arm Inn (Level 3)
+COPY_EXISTING ~%FriendlyArmInn_L3%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 5
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME02
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 3. Landrin's House (Beregost)
+COPY_EXISTING ~%Beregost_LandrinsHouse%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME03
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 4. Firebead's House, 2nd Floor
+COPY_EXISTING ~%Beregost_FirebeadsHouse_L2%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME04
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 5. Feldepost's Inn (Level 2: Tranzig's room)
+COPY_EXISTING ~%Beregost_FeldepostsInn_L2%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME05
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 6. Nashkel Carnival (Zordral's Tent)
+COPY_EXISTING ~%NashkelCarnival_ZordralsTent%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME06
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 7. Jenkal's House
+COPY_EXISTING ~%Gullykin_JenkalsHouse_L1%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME07
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 8. Beregost (Travenhurst Manor)
+COPY_EXISTING ~%Beregost_TravenhurstManor_L1%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 2
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME08
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 9. Nashkel (Manor House)
+COPY_EXISTING ~%Nashkel_ManorHouse_L1%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 2
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME09
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 10. Cloakwood Mines (Davaeorn's Quarters)
+COPY_EXISTING ~%CloakwoodMines_L4%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 5
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME10
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 11. Cloakwood Lodge
+COPY_EXISTING ~%CloakwoodLodgeHuntingLodge%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME11
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 12. Ramazith's Tower (Level 4)
+COPY_EXISTING ~%NBaldursGate_RamazithsTower_L6%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME12
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 13. Ragefast's House
+COPY_EXISTING ~%WBaldursGate_RagefastsHouse%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME13
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 14. Fifth Floor, Candlekeep Library
+COPY_EXISTING ~%Candlekeep_Library_L5%.are~ ~override~
+LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+INT_VAR
+fj_con_itm_idx    = SHORT_AT 0x74 - 1
+fj_flags          = 1 // identified
+STR_VAR
+fj_name           = TITOME14
+fj_structure_type = itm
+END
+BUT_ONLY
+
+// 15. Priests' Quarters, Candlekeep
+//COPY_EXISTING ~%Candlekeep_PriestsQuarters%.are~ ~override~
+//LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
+//INT_VAR
+//fj_con_itm_idx    = SHORT_AT 0x74 - 1
+//fj_flags          = 1 // identified
+//STR_VAR
+//fj_name           = TICAMGLA
+//fj_structure_type = itm
+//END
+//BUT_ONLY
+
+// Copying custom items and spells
+// 1.
+COPY ~TICam/items/TICAMBAG.sto~ ~override/TICAMBAG.sto~
+  SAY NAME2 ~Book Bag~
+COPY ~TICam/items/TICAMBAG.itm~ ~override/TICAMBAG.itm~
+  SAY NAME1 ~Book Bag~
+  SAY NAME2 ~Book Bag~
+  SAY UNIDENTIFIED_DESC~This is a finely decorated leather bag just the right size to carry books.~
+  SAY DESC ~This is a finely decorated leather book bag. It was given by Camryn the Scribe to <CHARNAME> as a going-away present when <PRO_HESHE> left Candlekeep. It is just the right size to carry books.~
+
+// 1a.
+COPY ~TICam/items/TIBGCBAG.sto~ ~override/TIBGCBAG.sto~
+  SAY NAME2 ~Book Bag~
+COPY ~TICam/items/TIBGCBAG.itm~ ~override/TIBGCBAG.itm~
+  SAY NAME1 ~Book Bag~
+  SAY NAME2 ~Book Bag~
+  SAY UNIDENTIFIED_DESC~This is a finely decorated leather bag just the right size to carry books.~
+  SAY DESC ~This is a finely decorated leather book bag. It was given by Camryn the Scribe to <CHARNAME> as a going-away present when <PRO_HESHE> left Candlekeep. It is just the right size to carry books.~
+
+// 2.
+COPY ~TICam/items/TIC0SCRL.itm~ ~override/TIC0SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Dear Tamah,
+Here, in the silence of my office, I am missing the scratch of your pen, your gentle cough, and the squeak of your chair as you shift. All the small noises which signaled the glorious fact that you, dear you, were nearby me. I did not even have to raise my eyes to know that your delicate little fingers were creating beauty so close to me. I could even stretch out my foot under the table that we shared and brush against your graceful ankles. Those days were heaven; I thought I might have them forever... Only in my reverie, Tamah. Only with my face streaming with tears.
+--C.~
+
+// 3.
+COPY ~TICam/items/TIC1SCRL.itm~ ~override/TIC1SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Sweet Tamah,
+You told me when we first met that I reminded you of your mother's grandfather; an Elvish Scholar of some fame in Trademeet. You felt intimidated by our difference in ages, by the scope and breadth of my knowledge, and by my more extensive experience of life. You said your meager sum of years and knowledge made you feel as if you were inadequate for the job I offered you. Ah, my tempestuous lover! Know now I felt equally inadequate to love such a magnificent woman as you. In my bed and in my arms, my centuries were mere moments in comparison to your instinctive, boundless knowledge of love's satisfaction. I have felt as much a child as you have, my dear, when you have told me of the outer worlds' beauties, explained that stableboy Dreppin's jokes, and, not least, guided me from unreasoning desire to unmatched pleasure. Consider, then, that in this and in most other things, we are properly matched partners regardless of our ages.
+--C.~
+
+// 4.
+COPY ~TICam/items/TIC2SCRL.itm~ ~override/TIC2SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Beloved Tamah,
+This morning when I woke up, alone as is now usual, I thought about the feel of your hair in my hands.  Its weight on my palms just before the silken soft strands slip through my ink-stained fingers.  It is a brilliant, shining halo of glory that adorns your temples, my dear.  I would give all of my remaining mornings if I could once more run your ebony comb through the threads after a night spent with the long, loose ends tickling my lips or spread luxuriously across my pillow.
+--C.~
+
+// 5.
+COPY ~TICam/items/TIC3SCRL.itm~ ~override/TIC3SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Darling Tamah,
+There is little today in my thoughts that can entirely banish the memory of your eyes.  Wide and deep as a slow moving river.  But oh, how they brightened when you smiled!  They shone like they were lit from within by a fierce inferno of flame.  And for what?  For the centuries old joke of the pedant you said you loved.  Truly, my love, I am both humbled and amazed by the joy  you found in my presence and never cease to wonder at the mystery of it all.
+--C.~
+
+// 6.
+COPY ~TICam/items/TIC4SCRL.itm~ ~override/TIC4SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Dear Tamah,
+My heart stirred with pain, but it took a moment to remember that today marked five years since the day you left.  There is still no space in my grief to enjoy any of the small pleasures that once were in my life.  Why?  Because in 20 brief years you made your imprint upon each small measure of happiness.  I still cannot work, cannot eat, cannot sleep (nay!  Not even reverie) without being reminded of your loss.  The sharp absent presence is ever beside me; a shadow crossing the face of the sun of my life.  How I wish you would return.
+--C.~
+
+// 7.
+COPY ~TICam/items/TIC5SCRL.itm~ ~override/TIC5SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Lovely Tamah,
+Ah, my dear, I feel your absence keenly not just in moments of solitude, but also when in company with those I call my friends. You had such a quick wit that they all respected you despite your youth. You easily traded barbs with Ulraunt and jokes with Gorion. You could discuss an episode of Cormyr history with Phlydia as easily as exchange dirty jokes with Withrop. I had never regarded my own tongue as lacking until I met you. In your presence, it stumbles and stutters over even the slightest word. Only my eyes' expression of love for you was eloquent, engaged as they were in admiring your confidence and joie de vivre.
+--C.~
+
+// 8.
+COPY ~TICam/items/TIC6SCRL.itm~ ~override/TIC6SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Saucy Tamah,
+I was reminded late one night of when we fell in love. We were working on an edition of Celsor's "Seduction of a Nymph". You were drawing the illustrations and I was to apply colored inks and gold leaf. Ah... such naughty images you created, my dear. Yet also so beautiful. Only a scribe of my long years can appreciate how rarely an illustrator of your talent comes along. Only one like you, who could tease an old elf like myself back to vigorous manhood. We were illustrating the scene where Coreddon caresses Ephemera in the garden, I remember, and your hand brushed against mine. My heart was already yours, my darling, but I feared to speak lest you laugh at an old elf's fantasies. Trembling, I laid my hand on yours, and you asked if you could be my Ephemera. The lips I had once only employed for speaking were put to finer use, beloved; that night, I certainly tried to be Coreddon, although I doubt Ulraunt would have appreciated knowing the use we made of his patch of begonias in Candlekeep's garden!
+--C.~
+
+// 9.
+COPY ~TICam/items/TIC7SCRL.itm~ ~override/TIC7SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Tamah,
+How many ways can I tell you that you were right? That someday I, too, would rage against the walls of Candlekeep like a bird in a cage. I sought out Candlekeep so that I would never have to face my fears, but here I am, gazing solidly at them. Let me speak briefly of my childhood, Tamah. I was born in Waterdeep in 1032 DR, the year the master-mage Aghairon became the first lord of Waterdeep and brought that city a government based on reason instead of the strength of arms. I should know: my parents were his friends and were slain during an attempted uprising by one of the defeated Warlords Aghairon had supplanted. From childhood, therefore, I have been afraid to love anyone. As peaceful as it has become, Waterdeep still seethes with the ambition of its guildmasters. I have never felt safe anywhere save Candlekeep. Yet, my wise Tamah, you were right. Even hidden away in my tower, love found me. Passion briefly ruled my nights and sweet harmony my days. By trying to keep you near me, I drove you away... Alas, I have still lost my dearest friend and companion! With your strength to keep fear at bay, my love, I know I can leave here. With your hand, this life can be changed.
+--C.~
+
+// 10.
+COPY ~TICam/items/TIC8SCRL.itm~ ~override/TIC8SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Tamah,
+I was looking out the window this afternoon and saw that the swallows had returned to the eaves of the Library. They shelter in the carvings and embellishments of the building. One pair has chosen to build their nest on the window ledge of our... My bedroom. I wept, though I welcome this little pair and their babies to my humble abode. Remind me, my sweet... Did we not once talk of marrying? Of children? Did we not tease each other with our notions of a child with my chin and your eyes? I suppose I could recall every word in reverie if I did not fear that the memory would drive me mad. Families and children have drifted into Candlekeep, my love; Winthrop and Gorion have each adopted a child. The noise of children's feet echo in the Library Halls and <CHARNAME>, Gorion's child, has twice knocked over my ink bottles. I should have been angered, but, instead, I gave <PRO_HIMHER> a colored pencil and a blank scroll to draw on. Did I once have the chance for many such obvious expressions of love with my own children? How could I have been so blind?
+--C.~
+
+// 11.
+COPY ~TICam/items/TIC9SCRL.itm~ ~override/TIC9SCRL.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Beloved Tamah,
+It has been years since you left me, my dear one, and my desk drawers are beginning to be stuffed with letters to you. I desperately need some way to contact you even though I have no idea where you've gone. But then it occurred to me: you are a gifted Illuminator. Far more skilled than I, in fact. From the first, the nobles would pay a premium for samples of your work. And now, a 'Tamah' edition of a book is valuable. I know it would amuse you to discover that one lordling just gained entry to Candlekeep with one of our 'special' editions of Celsor's 'Seduction of a Nymph.' How appalled they would all be if they knew what fine lovemaking occurred just inches away from every edition we created! But I am forgetting my purpose in writing today.Somewhere you must be working for a wealthy family or a private library. If I send out a book... you might read it. You might even remember where we used to hide our love-notes to each other. And find this letter... I shall start inserting my letters into the books of poetry that I copy for patrons. Hopefully, at least one might reach your eyes and tell you of my continuing love for you. I am not concerned with anything that has happened between your departure and when you read this, my beloved. I want you back.
+--C.~
+
+// 12.
+COPY ~TICam/items/TIC10SCR.itm~ ~override/TIC10SCR.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Love... My Tamah,
+Ulraunt laughs now whenever I refer to you, dear one. For even with the passage of three decades, I still call you 'my love.' Nor is his attitude unusual. Most humans acquainted with me at the least find this continuing attachment odd, calling it an 'Elven bond' and shaking their heads in pity, as if I were some kind of fool to still love you. Even you, nearest and dearest to my heart, failed to understand how I could have held my heart in reserve for three hundred years until you (!) invaded my life and held such benevolent tyranny over its solitary beat. Know then, darling, that even amongst such curiously faithful beings as elves there are those who astound their own kind with their reclusiveness. I was one such; as a youth, I was cold and unmoved by emotion. My parents named me 'órëlóra' ('heartless') for my detached distance. My attachment has always been to ancient secrets and hidden lore. I became a mage of no small power in my prime, before I forsook magic for the delight of pure knowledge. I laughed at my fellows--Elves and Men alike--who formed bonds of love only to see them sundered by the servants of Time. Imagine, then, my surprise when I met you. I was stirred to life: I ran madly after you in the Library Halls and across the gardens of Candlekeep! I had to immerse myself in contemplation of your beauty and bring you, half-laughing, half-groaning, to pleasure that neither of us had known before. First and last in my heart, Tamah... Of course you are still 'my love'!!
+--C.~
+
+// 13.
+COPY ~TICam/items/TIC11SCR.itm~ ~override/TIC11SCR.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~My Sweet Tamah,
+I write this letter at the truly indecent hour of half past three. I have lain awake for long enough and shall merely start my day early with a note to you. I need not sleep at all, as you know, but reverie lately has brought me only endless repetitions of our final argument and your overly hasty departure. The blankness of sleep, however, has fled from me and left me yearning for your body. I would so love to return to those days when we slept naked and entwined together. I long to smell you, taste you, feel the texture of your skin against my lips and tongue. But alas, my rosebud, only in my memory may I, like the butterfly, breathe your heady perfume and lap nectar from your silky petals. I am utterly alone in these small hours; I must tame my rebellious flesh without your kind assistance. Gods help me!
+--C.~
+
+// 14.
+COPY ~TICam/items/TIC12SCR.itm~ ~override/TIC12SCR.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~To My Dear Tamah,
+Once, when we were talking of marriage, I remember telling you of the most ancient of Elven customs: the exchange of the vows of eternal love. You were surprised to discover that Elves need no church-buildings, no priests, no ceremonies, and no approval of state and local constabulary to bond. Those, my love, are just the trappings to a basic agreement between willing and loving partners. I have never been averse to human weddings--have been invited to more than a few in my time--but find them amusingly repetitive. I would marry you any way you might choose, my dear, but I will always remind you that I am already yours. The words we spoke to each other in Candlekeep Garden when we declared our love for each other were my vow of commitment. I need no other promises to eternally be your man. Take this ring as proof of my words that you are the only woman I wish to be married to.
+--C.~
+
+// 15.
+COPY ~TICam/items/TIC13SCR.itm~ ~override/TIC13SCR.itm~
+  SAY NAME1 ~Letter to Tamah~
+  SAY NAME2 ~Letter to Tamah~
+  SAY DESC ~Forgive me, Tamah,
+This morning I remembered our final argument... again... but with a difference. In my mind, once again you stormed off in such rage because I would not leave the safety of Candlekeep. Once again, you reminded me that the Keeper of Tomes disliked our pairing and would only begrudgingly permit us to raise children here. My protest that that he did not forbid us--that we could have a family here--fell on nearly deaf ears. I remember that you said you wanted to feel the freedom of a life without the border of stone walls and to daily hear the chorus of young voices around you as you suckle your youngest. You wanted to know that all of them would have open fields and woodland to explore instead of the stale air of the Library halls. The normal noises of nature instead of the murmur of whispers in enforced silence. All of this I remembered, love, but with a difference. This time, knowing what I did not know then--what it meant to live with only your absent presence beside me, I imagined myself giving in and giving you what you so dearly want. Why the difference? órëlóra has become quantë órë... My heart is full...
+--C.~
+
+// 16.
+COPY ~TICam/items/TIC14SCR.itm~ ~override/TIC14SCR.itm~
+  SAY NAME1 ~Letter to <CHARNAME>~
+  SAY NAME2 ~Letter to <CHARNAME>~
+  SAY DESC ~My dear <CHARNAME>,
+<DAYANDMONTH>, in the Year of the Banner, <YEAR>.
+I am writing in haste a final note... This time for you. When I got up this morning, I sensed excitement in the air. I felt that something in my life was about to change. Even if this means I am to face my own demise, my whole heart yearns to embrace that change. You might think it foolish of me to believe this, but I am certain that I am to see Tamah today, even if only in whatever afterlife is permitted a man who will not enter Arvanaith without his human lover beside him. But I am rambling and have momentarily forgotten my purpose in writing...I am going to ask something of you, <CHARNAME>, being well aware that you have been kept in the dark about your past (those of us who knew were forbidden to speak of it lest we attract...unwanted...attention). I ask you to embrace change. Refusing to do so can only lead to unhappiness. This is the lesson I wish to pass on to you. Learn it well. I include in this note a small token of my esteem. It has served me well in my life. May it serve you at least as well.
+Ever Your Friend,
+--Camryn~
+
+// 1.
+COPY ~TICam/items/TITOME01.itm~ ~override/TITOME01.itm~
+  SAY NAME1 ~Astrophil and Stella~
+  SAY NAME2 ~Astrophil and Stella~
+  SAY DESC ~Stella oft sees the very face of woe
+Painted in my beclouded stormy face,
+But cannot skill to pity my disgrace,
+Not though thereof the cause herself she know;
+Yet hearing late a fable, which did show
+Of lovers never known a grievous case,
+Pity thereof gat in her breast such place
+That, from that sea derived, tears’ spring did flow.
+Alas, if fancy drawn by imaged things,
+Though false, yet with free scope more grace doth breed
+Than servant’s wrack, where new doubts honor brings;
+Then think, my dear, that you in me do read
+Of lover’s ruin some sad tragedy.
+I am not I; pity the tale of me.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 2.
+COPY ~TICam/items/TITOME02.itm~ ~override/TITOME02.itm~
+  SAY NAME1 ~Pamphilia to Amphilanthus~
+  SAY NAME2 ~Pamphilia to Amphilanthus~
+  SAY DESC~When I beeheld the Image of my deere
+With greedy lookes mine eyes would that way bend,
+Fear, and desire did inwardly contend;
+Feare to bee mark’d, desire to drawe still neere,
+And in my soule a speritt wowld apeer,
+Which boldnes waranted, and did pretend
+To bee my genius, yett I durst nott lend
+My eyes in trust wher others seemed soe cleere,
+Then did I search from whence this danger ’rose,
+If such unworthynes in mee did rest
+As my sterv’d eyes must nott with sight bee blest;
+When jealousie her poyson did disclose;
+Yett in my hart unseense of jealous eye
+The truer Image shall in triumph lye.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 3.
+COPY ~TICam/items/TITOME03.itm~ ~override/TITOME03.itm~
+  SAY NAME1 ~Sonnet 18~
+  SAY NAME2 ~Sonnet 18~
+  SAY DESC~Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate:
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date:
+Sometime too hot the eye of heaven shines,
+And often is his gold complexion dimmed,
+And every fair from fair sometime declines,
+By chance, or nature's changing course untrimmed:
+But thy eternal summer shall not fade,
+Nor lose possession of that fair thou ow'st,
+Nor shall death brag thou wander'st in his shade,
+When in eternal lines to time thou grow'st,
+So long as men can breathe, or eyes can see,
+So long lives this, and this gives life to thee.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 4.
+COPY ~TICam/items/TITOME04.itm~ ~override/TITOME04.itm~
+  SAY NAME1 ~Song to Celia~
+  SAY NAME2 ~Song to Celia~
+  SAY DESC~Drinke to me, onely, with thine eyes,
+And I will pledge with mine;
+Or leave a kisse but in the cup,
+And Ile not looke for wine.
+The thirst, that from the soule doth rise,
+Doth aske a drinke divine:
+But might I of Jove’s Nectar sup,
+I would not change for thine.
+I sent thee, late, a rosie wreath,
+Not so much honoring thee,
+As giving it a hope, that there
+It could not withered bee.
+But thou thereon did’st onely breath,
+And sent’st it back to mee:
+Since when it growes, and smells, I sweare,
+Not of it selfe, but thee.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 5.
+COPY ~TICam/items/TITOME05.itm~ ~override/TITOME05.itm~
+  SAY NAME1 ~She Walks in Beauty~
+  SAY NAME2 ~She Walks in Beauty~
+  SAY DESC~I. She walks in beauty, like the night
+Of cloudless climes and starry skies;
+And all that’s best of dark and bright
+Meet in her aspect and her eyes:
+Thus mellowed to that tender light
+Which heaven to gaudy day denies.
+
+II. One shade the more, one ray the less,
+Had half impaired the nameless grace
+Which waves in every raven tress,
+Or softly lightens o’er her face;
+Where thoughts serenely sweet express
+How pure, how dear their dwelling place.
+
+III. And on that cheek, and o’er that brow,
+So soft, so calm, yet eloquent,
+The smiles that win, the tints that glow,
+But tell of days in goodness spent,
+A mind at peace with all below,
+A heart whose love is innocent!~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 6.
+COPY ~TICam/items/TITOME06.itm~ ~override/TITOME06.itm~
+  SAY NAME1 ~The Look~
+  SAY NAME2 ~The Look~
+  SAY DESC~Strephon kissed me in the spring,
+Robin in the fall,
+But Colin only looked at me
+And never kissed at all.
+Strephon’s kiss was lost in jest,
+Robin’s lost in play,
+But the kiss in Colin’s eyes
+Haunts me night and day.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 7.
+COPY ~TICam/items/TITOME07.itm~ ~override/TITOME07.itm~
+  SAY NAME1 ~Monna Innominata~
+  SAY NAME2 ~Monna Innominata~
+  SAY DESC~I loved you first: but afterwards your love,
+Outsoaring mine, sang such a loftier song
+As drowned the friendly cooings of my dove.
+Which owes the other most? My love was long,
+And yours one moment seemed to wax more strong;
+I loved and guessed at you, you contrued me
+And loved me for what might or might not be—
+Nay, weights and measures do us both a wrong.
+For verily love knows not ‘mine’ or ‘thine’;
+With separate ‘I’ and ‘thou’ free love has done,
+For one is both and both are one in love:
+Rich love knows nought of ‘thine that is not mine’;
+Both have the strength and both the length thereof,
+Both of us, of the love which makes us one.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 8.
+COPY ~TICam/items/TITOME08.itm~ ~override/TITOME08.itm~
+  SAY NAME1 ~When to her Lute Corinna Sings~
+  SAY NAME2 ~When to her Lute Corinna Sings~
+  SAY DESC~When to her lute Corinna sings,
+Her voice revives the leaden strings,
+And doth in highest notes appear,
+As any challenged echo clear;
+But when she doth of mourning speak,
+E'en with her sighs, the strings do break,
+And as her lute doth live or die,
+Led by her passion, so must I:
+For when of pleasure she doth sing,
+My thoughts enjoy a sudden spring,
+But if she doth of sorrow speak,
+E'en from my heart the strings do break.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 9.
+COPY ~TICam/items/TITOME09.itm~ ~override/TITOME09.itm~
+  SAY NAME1 ~The Passionate Shepherd to His Love~
+  SAY NAME2 ~The Passionate Shepherd to His Love~
+  SAY DESC~Come live with me and be my love,
+And we will all the pleasures prove
+That valleys, groves, hills, and fields,
+Woods, or steepy mountain yields.
+
+And we will sit upon the rocks,
+Seeing the shepherds feed their flocks,
+By shallow rivers to whose falls
+Melodious birds sing madrigals.
+
+And I will make thee beds of roses
+And a thousand fragrant posies,
+A cap of flowers, and a kirtle
+Embroidered all with leaves of myrtle;
+
+A gown made of the finest wool
+Which from our pretty lambs we pull;
+Fair lined slippers for the cold,
+With buckles of the purest gold;
+
+A belt of straw and ivy buds,
+With coral clasps and amber studs:
+And if these pleasures may thee move,
+Come live with me, and be my love.
+
+The shepherds’ swains shall dance and sing
+For thy delight each May morning:
+If these delights thy mind may move,
+Then live with me and be my love.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 10.
+COPY ~TICam/items/TITOME10.itm~ ~override/TITOME10.itm~
+  SAY NAME1 ~The Old Arcadia~
+  SAY NAME2 ~The Old Arcadia~
+  SAY DESC~Yonder, my Claius, Urania lighted; the very horse, methought, bewailed to be so disburdened: and as for thee, poor Claius, when thou wentest to help her down, I saw reverence and desire so divide thee, that thou didst at one instant both blush and quake, and instead of bearing her wert ready to fall down thyself. There she sat, vouchsafing my cloak (then most gorgeous) under her: at yonder rising of the ground she turned herself, looking back towards her wonted abode, and because of her parting, bearing much sorrow in her eyes, the lightsomeness whereof had yet so natural a cheerfulness that it made even sorrow seem to smile; at that turning she spake to us all, opening the cherry of her lips, and Lord how greedily mine ears did feed upon the sweet words she uttered! And here she laid her hand over thine eyes, when she saw the tears springing in them, as if she would conceal them from other, and yet herself feel some of thy sorrow. But woe is me, yonder, yonder, did she put her foot into the boat, at that instant, as it were, dividing her heavenly beauty between the earth and the sea. But when she was embarked, did you not mark how the winds whistled and the seas danced for joy, how the sails did swell with pride, and all because they had Urania? O Urania, blessed be thou Urania, the sweetest fairness, and fairest sweetness!~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 11.
+COPY ~TICam/items/TITOME11.itm~ ~override/TITOME11.itm~
+  SAY NAME1 ~The Decameron: Prince Galehaut~
+  SAY NAME2 ~The Decameron: Prince Galehaut~
+  SAY DESC~As often, most gracious ladies, as, taking thought in myself, I mind me how very pitying you are all by nature, so often do I recognize that this present work will, to your thinking, have a grievous and a weariful beginning, inasmuch as the dolorous remembrance of the late pestiferous mortality, which it beareth on its forefront, is universally irksome to all who saw or otherwise knew it. But I would not therefore have this affright you from reading further, as if in the reading you were still to fare among sighs and tears. Let this grisly beginning be none other to you than is to wayfarers a rugged and steep mountain, beyond which is situate a most fair and delightful plain, which latter cometh so much the pleasanter to them as the greater was the hardship of the ascent and the descent; for, like as dolour occupieth the extreme of gladness, even so are miseries determined by imminent joyance. This brief annoy (I say brief, inasmuch as it is contained in few pages) is straightway succeeded by the pleasance and delight which I have already promised you and which, belike, were it not aforesaid, might not be looked for from such a beginning. And in truth, could I fairly have availed to bring you to my desire otherwise than by so rugged a path as this will be I had gladly done it; but being in a manner constrained thereto, for that, without this reminiscence of our past miseries, it might not be shown what was the occasion of the coming about of the things that will hereafter be read, I have brought myself to write them.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 12.
+COPY ~TICam/items/TITOME12.itm~ ~override/TITOME12.itm~
+  SAY NAME1 ~The Faerie Queene~
+  SAY NAME2 ~The Faerie Queene~
+  SAY DESC~Lo I the man, whose Muse whilome did maske,
+    As time her taught, in lowly Shepheards weeds,
+    Am now enforst a far vnfitter taske,
+    For trumpets sterne to chaunge mine Oaten reeds,
+    And sing of Knights and Ladies gentle deeds;
+    Whose prayses hauing slept in silence long,
+    Me, all too meane, the sacred Muse areeds
+    To blazon broad emongst her learned throng:
+Fierce warres and faithfull loues shall moralize my song.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 13.
+COPY ~TICam/items/TITOME13.itm~ ~override/TITOME13.itm~
+  SAY NAME1 ~To the Virgins~
+  SAY NAME2 ~To the Virgins~
+  SAY DESC~Gather ye rosebuds while ye may,
+   Old Time is still a-flying;
+And this same flower that smiles today
+   Tomorrow will be dying.
+
+The glorious lamp of heaven, the sun,
+   The higher he’s a-getting,
+The sooner will his race be run,
+   And nearer he’s to setting.
+
+That age is best which is the first,
+   When youth and blood are warmer;
+But being spent, the worse, and worst
+   Times still succeed the former.
+
+Then be not coy, but use your time,
+   And while ye may, go marry;
+For having lost but once your prime,
+   You may forever tarry.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 14.
+COPY ~TICam/items/TITOME14.itm~ ~override/TITOME14.itm~
+  SAY NAME1 ~Change~
+  SAY NAME2 ~Change~
+  SAY DESC~Change
+Said the sun to the moon,
+You cannot stay.
+
+Change
+Says the moon to the waters,
+All is flowing.
+
+Change
+Says the fields to the grass,
+Seed-time and harvest,
+Chaff and grain.
+
+You must change said,
+Said the worm to the bud,
+Though not to a rose,
+
+Petals fade
+That wings may rise
+Borne on the wind.
+
+You are changing
+said death to the maiden, your wan face
+To memory, to beauty.
+
+Are you ready to change?
+Says the thought to the heart, to let her pass
+All your life long
+
+For the unknown, the unborn
+In the alchemy
+Of the world's dream?
+
+You will change,
+says the stars to the sun,
+Says the night to the stars.~
+  SAY 0xde ~A letter falls out of the spine of the book.~
+
+// 15.
+COPY ~TICam/items/TICAMRIN.itm~ ~override/TICAMRIN.itm~
+  SAY NAME1 ~Ring~
+  SAY NAME2 ~Engagement Ring~
+  SAY UNIDENTIFIED_DESC~This is a beautiful ring with perfectly cut stones.~
+  SAY DESC~This is the engagement ring that Camryn sent to Tamah as a proof of his love.~
+
+// 1.
+COPY ~TICam/items/TIBOOK01.itm~ ~override/TIBOOK01.itm~
+  SAY NAME1 ~Astrophil and Stella~
+  SAY NAME2 ~Astrophil and Stella~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC ~Stella oft sees the very face of woe
+Painted in my beclouded stormy face,
+But cannot skill to pity my disgrace,
+Not though thereof the cause herself she know;
+Yet hearing late a fable, which did show
+Of lovers never known a grievous case,
+Pity thereof gat in her breast such place
+That, from that sea derived, tears’ spring did flow.
+Alas, if fancy drawn by imaged things,
+Though false, yet with free scope more grace doth breed
+Than servant’s wrack, where new doubts honor brings;
+Then think, my dear, that you in me do read
+Of lover’s ruin some sad tragedy.
+I am not I; pity the tale of me.~
+
+// 2.
+COPY ~TICam/items/TIBOOK02.itm~ ~override/TIBOOK02.itm~
+  SAY NAME1 ~Pamphilia to Amphilanthus~
+  SAY NAME2 ~Pamphilia to Amphilanthus~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~When I beeheld the Image of my deere
+With greedy lookes mine eyes would that way bend,
+Fear, and desire did inwardly contend;
+Feare to bee mark’d, desire to drawe still neere,
+And in my soule a speritt wowld apeer,
+Which boldnes waranted, and did pretend
+To bee my genius, yett I durst nott lend
+My eyes in trust wher others seemed soe cleere,
+Then did I search from whence this danger ’rose,
+If such unworthynes in mee did rest
+As my sterv’d eyes must nott with sight bee blest;
+When jealousie her poyson did disclose;
+Yett in my hart unseense of jealous eye
+The truer Image shall in triumph lye.~
+
+// 3.
+COPY ~TICam/items/TIBOOK03.itm~ ~override/TIBOOK03.itm~
+  SAY NAME1 ~Sonnet 18~
+  SAY NAME2 ~Sonnet 18~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate:
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date:
+Sometime too hot the eye of heaven shines,
+And often is his gold complexion dimmed,
+And every fair from fair sometime declines,
+By chance, or nature's changing course untrimmed:
+But thy eternal summer shall not fade,
+Nor lose possession of that fair thou ow'st,
+Nor shall death brag thou wander'st in his shade,
+When in eternal lines to time thou grow'st,
+So long as men can breathe, or eyes can see,
+So long lives this, and this gives life to thee.~
+
+// 4.
+COPY ~TICam/items/TIBOOK04.itm~ ~override/TIBOOK04.itm~
+  SAY NAME1 ~Song to Celia~
+  SAY NAME2 ~Song to Celia~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Drinke to me, onely, with thine eyes,
+And I will pledge with mine;
+Or leave a kisse but in the cup,
+And Ile not looke for wine.
+The thirst, that from the soule doth rise,
+Doth aske a drinke divine:
+But might I of Jove’s Nectar sup,
+I would not change for thine.
+I sent thee, late, a rosie wreath,
+Not so much honoring thee,
+As giving it a hope, that there
+It could not withered bee.
+But thou thereon did’st onely breath,
+And sent’st it back to mee:
+Since when it growes, and smells, I sweare,
+Not of it selfe, but thee.~
+
+// 5.
+COPY ~TICam/items/TIBOOK05.itm~ ~override/TIBOOK05.itm~
+  SAY NAME1 ~She Walks in Beauty~
+  SAY NAME2 ~She Walks in Beauty~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~I. She walks in beauty, like the night
+Of cloudless climes and starry skies;
+And all that’s best of dark and bright
+Meet in her aspect and her eyes:
+Thus mellowed to that tender light
+Which heaven to gaudy day denies.
+
+II. One shade the more, one ray the less,
+Had half impaired the nameless grace
+Which waves in every raven tress,
+Or softly lightens o’er her face;
+Where thoughts serenely sweet express
+How pure, how dear their dwelling place.
+
+III. And on that cheek, and o’er that brow,
+So soft, so calm, yet eloquent,
+The smiles that win, the tints that glow,
+But tell of days in goodness spent,
+A mind at peace with all below,
+A heart whose love is innocent!~
+
+// 6.
+COPY ~TICam/items/TIBOOK06.itm~ ~override/TIBOOK06.itm~
+  SAY NAME1 ~The Look~
+  SAY NAME2 ~The Look~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Strephon kissed me in the spring,
+Robin in the fall,
+But Colin only looked at me
+And never kissed at all.
+Strephon’s kiss was lost in jest,
+Robin’s lost in play,
+But the kiss in Colin’s eyes
+Haunts me night and day.~
+
+// 7.
+COPY ~TICam/items/TIBOOK07.itm~ ~override/TIBOOK07.itm~
+  SAY NAME1 ~Monna Innominata~
+  SAY NAME2 ~Monna Innominata~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~I loved you first: but afterwards your love,
+Outsoaring mine, sang such a loftier song
+As drowned the friendly cooings of my dove.
+Which owes the other most? My love was long,
+And yours one moment seemed to wax more strong;
+I loved and guessed at you, you contrued me
+And loved me for what might or might not be—
+Nay, weights and measures do us both a wrong.
+For verily love knows not ‘mine’ or ‘thine’;
+With separate ‘I’ and ‘thou’ free love has done,
+For one is both and both are one in love:
+Rich love knows nought of ‘thine that is not mine’;
+Both have the strength and both the length thereof,
+Both of us, of the love which makes us one.~
+
+// 8.
+COPY ~TICam/items/TIBOOK08.itm~ ~override/TIBOOK08.itm~
+  SAY NAME1 ~When to her Lute Corinna Sings~
+  SAY NAME2 ~When to her Lute Corinna Sings~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~When to her lute Corinna sings,
+Her voice revives the leaden strings,
+And doth in highest notes appear,
+As any challenged echo clear;
+But when she doth of mourning speak,
+E'en with her sighs, the strings do break,
+And as her lute doth live or die,
+Led by her passion, so must I:
+For when of pleasure she doth sing,
+My thoughts enjoy a sudden spring,
+But if she doth of sorrow speak,
+E'en from my heart the strings do break.~
+
+// 9.
+COPY ~TICam/items/TIBOOK09.itm~ ~override/TIBOOK09.itm~
+  SAY NAME1 ~The Passionate Shepherd to His Love~
+  SAY NAME2 ~The Passionate Shepherd to His Love~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Come live with me and be my love,
+And we will all the pleasures prove
+That valleys, groves, hills, and fields,
+Woods, or steepy mountain yields.
+
+And we will sit upon the rocks,
+Seeing the shepherds feed their flocks,
+By shallow rivers to whose falls
+Melodious birds sing madrigals.
+
+And I will make thee beds of roses
+And a thousand fragrant posies,
+A cap of flowers, and a kirtle
+Embroidered all with leaves of myrtle;
+
+A gown made of the finest wool
+Which from our pretty lambs we pull;
+Fair lined slippers for the cold,
+With buckles of the purest gold;
+
+A belt of straw and ivy buds,
+With coral clasps and amber studs:
+And if these pleasures may thee move,
+Come live with me, and be my love.
+
+The shepherds’ swains shall dance and sing
+For thy delight each May morning:
+If these delights thy mind may move,
+Then live with me and be my love.~
+
+// 10.
+COPY ~TICam/items/TIBOOK10.itm~ ~override/TIBOOK10.itm~
+  SAY NAME1 ~The Old Arcadia~
+  SAY NAME2 ~The Old Arcadia~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Yonder, my Claius, Urania lighted; the very horse, methought, bewailed to be so disburdened: and as for thee, poor Claius, when thou wentest to help her down, I saw reverence and desire so divide thee, that thou didst at one instant both blush and quake, and instead of bearing her wert ready to fall down thyself. There she sat, vouchsafing my cloak (then most gorgeous) under her: at yonder rising of the ground she turned herself, looking back towards her wonted abode, and because of her parting, bearing much sorrow in her eyes, the lightsomeness whereof had yet so natural a cheerfulness that it made even sorrow seem to smile; at that turning she spake to us all, opening the cherry of her lips, and Lord how greedily mine ears did feed upon the sweet words she uttered! And here she laid her hand over thine eyes, when she saw the tears springing in them, as if she would conceal them from other, and yet herself feel some of thy sorrow. But woe is me, yonder, yonder, did she put her foot into the boat, at that instant, as it were, dividing her heavenly beauty between the earth and the sea. But when she was embarked, did you not mark how the winds whistled and the seas danced for joy, how the sails did swell with pride, and all because they had Urania? O Urania, blessed be thou Urania, the sweetest fairness, and fairest sweetness!~
+
+// 11.
+COPY ~TICam/items/TIBOOK11.itm~ ~override/TIBOOK11.itm~
+  SAY NAME1 ~The Decameron: Prince Galehaut~
+  SAY NAME2 ~The Decameron: Prince Galehaut~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~As often, most gracious ladies, as, taking thought in myself, I mind me how very pitying you are all by nature, so often do I recognize that this present work will, to your thinking, have a grievous and a weariful beginning, inasmuch as the dolorous remembrance of the late pestiferous mortality, which it beareth on its forefront, is universally irksome to all who saw or otherwise knew it. But I would not therefore have this affright you from reading further, as if in the reading you were still to fare among sighs and tears. Let this grisly beginning be none other to you than is to wayfarers a rugged and steep mountain, beyond which is situate a most fair and delightful plain, which latter cometh so much the pleasanter to them as the greater was the hardship of the ascent and the descent; for, like as dolour occupieth the extreme of gladness, even so are miseries determined by imminent joyance. This brief annoy (I say brief, inasmuch as it is contained in few pages) is straightway succeeded by the pleasance and delight which I have already promised you and which, belike, were it not aforesaid, might not be looked for from such a beginning. And in truth, could I fairly have availed to bring you to my desire otherwise than by so rugged a path as this will be I had gladly done it; but being in a manner constrained thereto, for that, without this reminiscence of our past miseries, it might not be shown what was the occasion of the coming about of the things that will hereafter be read, I have brought myself to write them.~
+
+// 12.
+COPY ~TICam/items/TIBOOK12.itm~ ~override/TIBOOK12.itm~
+  SAY NAME1 ~The Faerie Queene~
+  SAY NAME2 ~The Faerie Queene~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Lo I the man, whose Muse whilome did maske,
+    As time her taught, in lowly Shepheards weeds,
+    Am now enforst a far vnfitter taske,
+    For trumpets sterne to chaunge mine Oaten reeds,
+    And sing of Knights and Ladies gentle deeds;
+    Whose prayses hauing slept in silence long,
+    Me, all too meane, the sacred Muse areeds
+    To blazon broad emongst her learned throng:
+Fierce warres and faithfull loues shall moralize my song.~
+
+// 13.
+COPY ~TICam/items/TIBOOK13.itm~ ~override/TIBOOK13.itm~
+  SAY NAME1 ~To the Virgins~
+  SAY NAME2 ~To the Virgins~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Gather ye rosebuds while ye may,
+   Old Time is still a-flying;
+And this same flower that smiles today
+   Tomorrow will be dying.
+
+The glorious lamp of heaven, the sun,
+   The higher he’s a-getting,
+The sooner will his race be run,
+   And nearer he’s to setting.
+
+That age is best which is the first,
+   When youth and blood are warmer;
+But being spent, the worse, and worst
+   Times still succeed the former.
+
+Then be not coy, but use your time,
+   And while ye may, go marry;
+For having lost but once your prime,
+   You may forever tarry.~
+
+// 14.
+COPY ~TICam/items/TIBOOK14.itm~ ~override/TIBOOK14.itm~
+  SAY NAME1 ~Change~
+  SAY NAME2 ~Change~
+  SAY UNIDENTIFIED_DESC~Judging by the arcane symbols printed on its cover, it is clear that this book is imbued with magical properties of one sort or another. Until you attempt to either read or identify it, however, its precise nature will remain unknown to you.~
+  SAY DESC~Change
+Said the sun to the moon,
+You cannot stay.
+
+Change
+Says the moon to the waters,
+All is flowing.
+
+Change
+Says the fields to the grass,
+Seed-time and harvest,
+Chaff and grain.
+
+You must change said,
+Said the worm to the bud,
+Though not to a rose,
+
+Petals fade
+That wings may rise
+Borne on the wind.
+
+You are changing
+said death to the maiden, your wan face
+To memory, to beauty.
+
+Are you ready to change?
+Says the thought to the heart, to let her pass
+All your life long
+
+For the unknown, the unborn
+In the alchemy
+Of the world's dream?
+
+You will change,
+says the stars to the sun,
+Says the night to the stars.~
+
+// 15.
+COPY ~TICam/items/TICAMAMU.itm~ ~override/TICAMGLA.itm~
+  SAY NAME1 ~Amulet~
+  SAY NAME2 ~Amulet of the Scribe~
+  SAY UNIDENTIFIED_DESC~Amulets of this sort are often bestowed upon apprentices that have finished or are close to finishing their apprenticeship with a master.~
+  SAY DESC~This amulet was given to <CHARNAME> by Camryn the Master Illuminator as a final farewell present. It is an ancient artifact said to aid in the identification of items and improve concentration.
+
+STATISTICS:
+Intelligence +1
+Lore increased by 25%~
+
+// 16.
+//COPY ~TICam/items/TICAMGLA.itm~ ~override/TICAMGLA.itm~
+//  SAY NAME1 ~Glasses~
+//  SAY NAME2 ~Camryn's Glasses~
+//  SAY UNIDENTIFIED_DESC~These are reading glasses. They are used for reading small print.~
+//  SAY DESC~These are Camryn's reading glasses. They are used for reading small print in books.~
+
+//Component: Copying images
+COPY ~TICam/bams~ ~override~
+
+ACTION_IF (GAME_IS ~tutu tutu_totsc~) OR (GAME_IS ~bgt~) THEN BEGIN
+  COPY ~TICam/images~ ~override~
+END ELSE BEGIN ACTION_IF GAME_IS ~bgee~ THEN BEGIN
+  COPY ~TICam/images/bgee~ ~override~
+END
+END
