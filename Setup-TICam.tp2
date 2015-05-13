@@ -276,7 +276,7 @@ BUT_ONLY
 COPY_EXISTING ~%FriendlyArmInn_L3%.are~ ~override~
 LAUNCH_PATCH_FUNCTION  ~fj_are_structure~
 INT_VAR
-fj_con_itm_idx    = SHORT_AT 0x74 - 5
+fj_con_itm_idx    = SHORT_AT 0x74 - 11
 fj_flags          = 1 // identified
 STR_VAR
 fj_name           = TITOME02
